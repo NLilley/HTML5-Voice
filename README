@@ -1,0 +1,15 @@
+HTML5 Voice
+
+A Simple Client-Server project to allow groups of people to talk to each other using new HTML5 Audio Recording APIs.
+
+The Server is written in python and uses Twisted/AutoBahn to provide the service.
+
+The Client is a JavaScript HTML5 application.
+
+-- Client --
+
+Be sure to npm-install the client requirements and run the gulp file.
+
+-- Server -- 
+
+Install the server requirements (Twisted, AutoBahn, etc.) and run server.py

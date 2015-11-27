@@ -1,0 +1,26 @@
+{
+  "name": "record",
+  "version": "1.0.0",
+  "description": "A simple about page",
+  "main": "./src/server.js",
+  "author": "Nicholas Lilley",
+  "repository": {
+    "type": "git",
+    "url": "./"
+  },
+  "dependencies": {
+    "react": "^0.14.0",
+    "react-dom": "^0.14.0",
+    "react-router": "^1.0.0-rc4",
+    "font-awesome": "X.X.X"
+  },
+  "devDependencies": {
+    "chai": "^3.4.0",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^5.3.0",
+    "gulp-uglify": "^1.4.2",
+    "mocha": "^2.3.3",
+    "sinon": "^1.17.2",
+    "webpack": "^1.12.2"
+  }
+}
