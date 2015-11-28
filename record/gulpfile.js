@@ -4,6 +4,7 @@ var babel = require('gulp-babel');
 
 var paths = {
     js: './js/*.js',
+    libJs: './lib-js/*.js',
     html: './html/*.html',
     css: './css/*.css',
     fonts: './fonts/*.*',
@@ -25,6 +26,11 @@ gulp.task('js', function () {
         .pipe(gulp.dest(paths.build + '/js'));
 });
 
+gulp.task('libJs', function () {
+    return gulp.src(paths.libJs)
+        .pipe(gulp.dest(paths.build + '/lib-js'));
+});
+
 gulp.task('html', function () {
     return gulp.src(paths.html)
         .pipe(gulp.dest(paths.build));
@@ -35,7 +41,7 @@ gulp.task('css', function () {
         .pipe(gulp.dest(paths.build + '/css'));
 });
 
-gulp.task('fonts', function(){
+gulp.task('fonts', function () {
     return gulp.src(paths.fonts)
         .pipe(gulp.dest(paths.build + '/fonts'));
 });
@@ -53,4 +59,4 @@ gulp.task('watch', function () {
     gulp.watch(paths.buildFiles, ['deployStatic']);
 });
 
-gulp.task('default', ['js', 'html', 'css', 'fonts', 'watch']);
+gulp.task('default', ['js', 'libJs', 'html', 'css', 'fonts', 'watch']);

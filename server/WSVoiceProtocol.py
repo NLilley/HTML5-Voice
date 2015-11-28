@@ -23,7 +23,7 @@ class WSVoiceProtocol(WebSocketServerProtocol):
         super(WSVoiceProtocol, self).onMessage(payload, isBinary)
         if isBinary:
             for user in self.factory.users:
-                if user != self:
+                if user == self:  # todo !=
                     user.sendMessage(payload, isBinary=True)
 
         else:

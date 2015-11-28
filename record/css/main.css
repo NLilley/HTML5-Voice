@@ -29,16 +29,17 @@ div {
 }
 
 label {
-    display: block;
     font-weight: bold;
 }
 
 input[type=text] {
+    display: block;
+
     border: 1px solid #333;
     font-size: 20px;
     border-radius: 4px;
     text-align: center;
-    margin-bottom: 6px;
+    margin: auto auto 6px;
 }
 
 .content {
@@ -47,19 +48,32 @@ input[type=text] {
     padding: 10px;
 }
 
-.btn-main {
+.icon-button {
     border: none;
     border-radius: 4px;
     font-size: 20px;
     text-align: left;
     background-color: #822;
     color: whitesmoke;
-    min-width: 128px;
     min-height: 36px;
+    min-width: 128px;
 
     padding: 0 10px 0 24px;
+    margin: 0 2px 0 2px;
 }
 
-.btn-main:hover {
+.icon-button:hover {
     background-color: #622;
+}
+
+.wide-button {
+    min-width: 256px;
+}
+
+.float-right {
+    float: right;
+}
+
+.float-left {
+    float: left;
 }

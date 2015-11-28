@@ -9,10 +9,11 @@
     "url": "./"
   },
   "dependencies": {
+    "alt": "^0.17.9",
+    "font-awesome": "X.X.X",
     "react": "^0.14.0",
     "react-dom": "^0.14.0",
-    "react-router": "^1.0.0-rc4",
-    "font-awesome": "X.X.X"
+    "react-router": "^1.0.0-rc4"
   },
   "devDependencies": {
     "chai": "^3.4.0",
