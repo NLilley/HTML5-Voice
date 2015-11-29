@@ -47,6 +47,19 @@ if __name__ == '__main__':
     root.putChild(u'ws', ws_resource)
     site = Site(root)
 
+    from twisted.internet.task import LoopingCall
+    test_file = open('./soundfile', 'rb')
+    test_data = test_file.read()
+    test_file.close()
+
+    # Test the server and shit!
+    def annoy_clients():
+        for client in factory.users.keys():
+            client.sendMessage(test_data, isBinary=True)
+
+    test_loop = LoopingCall(annoy_clients)
+    test_loop.start(1)
+
     from twisted.internet import reactor
 
     reactor.listenTCP(80, site)

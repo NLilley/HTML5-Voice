@@ -6,28 +6,28 @@ app.record = {};
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     window.AudioCOntext = window.AudioContext || window.webkitAudioContext;
 
-    let ws;
-    let audio;
+    let microphone;
+    let fileReader;
 
     let recording = true;
     let chunks = [];
 
 
-    app.record.startRecording = (address, port) => {
-        if (!navigator.getUserMedia) {
-            alert('getUserMedia() is not supported in your browser');
-            return;
-        }
+    app.record.startRecording = () => {
 
-        app.ws.startConnection(address, port).then(socket => {
-            ws = socket;
+        function prepareRecording(resolve, reject) {
+            if (!navigator.getUserMedia) {
+                alert('getUserMedia() is not supported in your browser');
+                return;
+            }
+
             navigator.getUserMedia({audio: true},
                 audioStream => {
                     console.log('Recording has begun:  WebSocket connection and Microphone feed acquired.');
 
                     chunks = [];
 
-                    audio = audioStream;
+                    microphone = audioStream;
                     let ac = new AudioContext();
                     let SAMPLE_RATE = ac.sampleRate;
                     let BUFFER_SIZE = 2048 * 8;
@@ -41,15 +41,10 @@ app.record = {};
                         if (recording) {
                             chunks.push(channel0);
                         }
-                        ws.send(channel0);
+                        app.ws.sendAudioData(channel0);
                     };
 
-
-                    let fileReader = new FileReader();
-
-                    ws.onmessage = data => {
-                        fileReader.readAsArrayBuffer(data.data);
-                    };
+                    fileReader = new FileReader();
 
                     fileReader.addEventListener('loadend', _ => {
                         let outputSource = ac.createBufferSource();
@@ -65,23 +60,26 @@ app.record = {};
 
                     });
 
-
+                    resolve();
                 },
                 err => {
-                    ws.close(1000, 'Connection unnecessary due to client.');
                     console.error(err);
-                    alert('Unable to start recording:  Microphone unavailable.');
+                    reject(err);
 
                 });
-        }).catch(err => {
-            console.error(err);
-            alert('Unable to start recording:  WebSocket server was unavailable.');
-        });
+        }
+
+        return new Promise(prepareRecording)
+
+    };
+
+    app.record.play = (data) => {
+        fileReader.readAsArrayBuffer(data.data);
+
     };
 
     app.record.stopRecording = _ => {
-        if (ws != null) ws.close();
-        if (audio != null) audio.stop();
+        if (microphone) microphone.stop();
     };
 
     app.record.playChunks = _ => {

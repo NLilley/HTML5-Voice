@@ -2,5 +2,5 @@ from autobahn.twisted.websocket import WebSocketServerFactory
 
 
 class WSVoiceServerFactory(WebSocketServerFactory):
-    users = []
+    users = {}
     MAX_USERS = 32

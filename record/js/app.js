@@ -29,7 +29,6 @@ let app = app || {};
 
         app.root = document.getElementById('react-app');
         ReactDOM.render(<Connect/>, app.root);
-
     }, false);
 
     let alt = new Alt();
@@ -40,7 +39,7 @@ let app = app || {};
         }
 
         disconnectFromServer() {
-            this.patch();
+            this.dispatch();
         }
     }
 
@@ -50,18 +49,107 @@ let app = app || {};
 
     app.listeners = {};
     app.listeners.connectToServer = (action) => {
-        if (action.action == connectActions.connectToServer.id) {
-            ReactDOM.unmountComponentAtNode(app.root);
-            ReactDOM.render(<Loading/>, app.root);
-            console.log(action);
-            app.record.startRecording(action.payload.serverAddress, action.payload.serverPort);
-            return true;
+        console.log(action);
+        let data = action.payload;
+        switch (action.action) {
+            case connectActions.connectToServer.id:
+                ReactDOM.render(<Loading/>, app.root);
+
+                app.ws.connect(data.serverAddress, data.serverPort, data.username)
+                    .then(_ => {
+                        ReactDOM.render(<VoiceMain/>, app.root);
+                    })
+                    .catch(_ => {
+                        ReactDOM.render(<Connect/>, app.root);
+                        // todo Move this into a proper notification!
+                        console.log('Unable to connect to server');
+                    });
+
+                app.record.startRecording()
+                    .then(()=> {
+                        console.log('Recording Microphone input!');
+                    })
+                    .catch(err => {
+                        console.error('Unable to get microphone input');
+                        console.error(err);
+                    });
+
+                return true;
+
+            case connectActions.disconnectFromServer.id:
+                app.ws.disconnect();
+                ReactDOM.render(<Connect/>, app.root);
+                return true;
+
+            default:
+                return false;
         }
-        return false;
     };
 
     dispatcher.register(app.listeners.connectToServer);
 
+    let VoiceMain = React.createClass({
+        render(){
+            return (
+                <div>
+                    <VoiceHeader/>
+                    <div className="main-content">
+                        <Users className="users"/>
+                        <Controls className="controls"/>
+                    </div>
+                </div>
+            )
+        }
+    });
+
+    let Users = React.createClass({
+        getInitialState(){
+            return {users: [{id: 1, username: "jack"}, {id: 2, username: "jill"}]};
+        },
+
+        render(){
+            return (
+                <div className="users">
+                    {
+                        this.state.users.map(user => {
+                            return <User key={user.id} username={user.username}/>
+                        })
+                    }
+                </div>
+            )
+        }
+    });
+
+    let User = React.createClass({
+        render(){
+            return (
+                <div className="user">
+                    {this.props.username}
+                </div>
+            )
+        }
+    });
+
+    let Controls = React.createClass({
+        render(){
+            return (
+                <div className="controls">
+                    <StopButton onClick={this.stopConnection}/>
+                </div>
+            )
+        },
+        stopConnection(){
+            connectActions.disconnectFromServer();
+        }
+    });
+
+    let StopButton = React.createClass({
+        render(){
+            return (
+                <IconButton text="Stop" icon="fa-stop" onClick={this.props.onClick}/>
+            )
+        }
+    });
 
     let Loading = React.createClass({
         render(){
@@ -142,21 +230,27 @@ let app = app || {};
             )
         },
         onClick () {
-            let username = this.refs.username;
-            let serverAddress = this.refs.serverAddress;
-            let serverPort = this.refs.serverPort;
-
-            if (username.state == null || serverAddress.state == null || serverPort.state == null) {
-                console.log('All fields must be completed to connect server!');
-                console.log('Also, put me in a notification!');
-                return;
-            }
-
             connectActions.connectToServer({
-                username: username.state.value,
-                serverAddress: serverAddress.state.value,
-                serverPort: serverPort.state.value
+                username: 'nilly',
+                serverAddress: '127.0.0.1',
+                serverPort: '80'
             });
+
+            //let username = this.refs.username;
+            //let serverAddress = this.refs.serverAddress;
+            //let serverPort = this.refs.serverPort;
+            //
+            //if (username.state == null || serverAddress.state == null || serverPort.state == null) {
+            //    console.log('All fields must be completed to connect server!');
+            //    console.log('Also, put me in a notification!');
+            //    return;
+            //}
+            //
+            //connectActions.connectToServer({
+            //    username: username.state.value,
+            //    serverAddress: serverAddress.state.value,
+            //    serverPort: serverPort.state.value
+            //});
         }
     });
 })();
