@@ -6,6 +6,22 @@ let app = app || {};
 
     let ws;
 
+    let events = {
+        'users': [(data)=> {
+            app.actions.updateUsers(data);
+        }]
+    };
+
+    app.ws.on = (event, callback) => {
+        if (!events.hasOwnProperty(event)) throw new Error(`Event of type ${event} does not exist!`);
+        events[event].push(callback);
+    };
+
+    // todo Implement me!
+    app.ws.off = (event, callback) => {
+
+    };
+
     app.ws.connect = (serverAddress, serverPort, username) => {
 
         let getConnection = (resolve, reject) => {
@@ -18,19 +34,28 @@ let app = app || {};
             };
 
             ws.onmessage = msg => {
-                app.record.play(msg);
+                console.log(msg);
+                if (msg.data instanceof Blob) {
+                    return app.record.play(msg.data);
+
+                }
+
+                let data = JSON.parse(msg.data);
+                let type = data.type;
+                if (events.hasOwnProperty(type)) {
+                    events[type].map(callback => callback(data.payload));
+                }
             };
 
             ws.onclose = _ => {
                 console.log('Closing WS connection!');
             };
 
-            setInterval(_ => {
+            setTimeout(_ => {
                 if (ws.readyState !== 1) { // 0: connecting, 1: open, 2: closing, 3: closed
                     console.log("Rejecting getConnection!");
-                    if (ws.readyState == 0) ws.close();
-
                     reject(new Error('Unable to create a websocket connection:  Timeout Reached'));
+                    if (ws.readyState == 0) ws.close();
                 }
             }, SERVER_TIMEOUT);
         };
@@ -43,8 +68,8 @@ let app = app || {};
     app.ws.isConnected = isConnected;
 
     app.ws.sendAudioData = (data) => {
-        if(isConnected())
-        ws.send(data);
+        if (isConnected())
+            ws.send(data);
     };
 
     app.ws.disconnect = () => {
@@ -52,6 +77,23 @@ let app = app || {};
             ws.close();
         }
     };
+
+    app.ws.getUsers = () => {
+        if (isConnected()) {
+            let message = {
+                type: 'get users'
+            };
+
+            ws.send(JSON.stringify(message));
+        }
+    };
+
+
+    // Page server for information
+    // todo Refctor this to make it good.  The server should tell you when something interesting happens, NO PAGING!
+    setInterval(()=> {
+        app.ws.getUsers();
+    }, 2000)
 
 })();
 

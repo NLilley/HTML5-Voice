@@ -6,10 +6,28 @@ app.record = {};
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     window.AudioCOntext = window.AudioContext || window.webkitAudioContext;
 
-    let microphone;
-    let fileReader;
+    let ac = new AudioContext();
 
-    let recording = true;
+    let fileReader = new FileReader();
+    let SAMPLE_RATE = ac.sampleRate;
+    let BUFFER_SIZE = 2048 * 8;
+
+    fileReader.addEventListener('loadend', _ => {
+        let outputSource = ac.createBufferSource();
+        outputSource.connect(ac.destination);
+
+        let f32 = new Float32Array(fileReader.result);
+        let buffer = ac.createBuffer(1, BUFFER_SIZE, SAMPLE_RATE);
+        buffer.copyToChannel(f32, 0, 0); //todo fix this!
+
+
+        outputSource.buffer = buffer;
+        outputSource.start();
+
+    });
+
+    let microphone;
+    let recording = false;
     let chunks = [];
 
 
@@ -24,17 +42,14 @@ app.record = {};
             navigator.getUserMedia({audio: true},
                 audioStream => {
                     console.log('Recording has begun:  WebSocket connection and Microphone feed acquired.');
-
                     chunks = [];
 
                     microphone = audioStream;
-                    let ac = new AudioContext();
-                    let SAMPLE_RATE = ac.sampleRate;
-                    let BUFFER_SIZE = 2048 * 8;
-                    let microphone = ac.createMediaStreamSource(audioStream);
+
+                    let stream = ac.createMediaStreamSource(audioStream);
                     let processingNode = ac.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
-                    microphone.connect(processingNode); //Connect our microphone right to processing.
+                    stream.connect(processingNode); //Connect our microphone right to processing.
 
                     processingNode.onaudioprocess = function (data) {
                         let channel0 = data.inputBuffer.getChannelData(0);
@@ -43,22 +58,6 @@ app.record = {};
                         }
                         app.ws.sendAudioData(channel0);
                     };
-
-                    fileReader = new FileReader();
-
-                    fileReader.addEventListener('loadend', _ => {
-                        let outputSource = ac.createBufferSource();
-                        outputSource.connect(ac.destination);
-
-                        let f32 = new Float32Array(fileReader.result);
-                        let buffer = ac.createBuffer(1, BUFFER_SIZE, SAMPLE_RATE);
-                        buffer.copyToChannel(f32, 0, 0); //todo fix this!
-
-
-                        outputSource.buffer = buffer;
-                        outputSource.start();
-
-                    });
 
                     resolve();
                 },
@@ -74,12 +73,14 @@ app.record = {};
     };
 
     app.record.play = (data) => {
-        fileReader.readAsArrayBuffer(data.data);
-
+        fileReader.readAsArrayBuffer(data);
     };
 
     app.record.stopRecording = _ => {
-        if (microphone) microphone.stop();
+        if (microphone) {
+            microphone.stop();
+            microphone = null;
+        }
     };
 
     app.record.playChunks = _ => {

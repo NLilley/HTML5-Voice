@@ -58,7 +58,7 @@ if __name__ == '__main__':
             client.sendMessage(test_data, isBinary=True)
 
     test_loop = LoopingCall(annoy_clients)
-    test_loop.start(1)
+    # test_loop.start(1)
 
     from twisted.internet import reactor
 

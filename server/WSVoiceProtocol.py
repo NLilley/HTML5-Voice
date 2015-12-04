@@ -1,8 +1,8 @@
+import json
+
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from twisted.python import log
 import sys
-
-from WSUser import WSUser
 
 log.startLogging(sys.stdout)
 
@@ -22,12 +22,12 @@ class WSVoiceProtocol(WebSocketServerProtocol):
             self.sendClose(3000, 'Error: You must specify a username to use this service!')
             return
 
-        self.factory.users[self] = WSUser(username)
+        self.factory.add_user(self, username)
 
     def onClose(self, wasClean, code, reason):
         super(WSVoiceProtocol, self).onClose(wasClean, code, reason)
         print 'Closing down the connection!'
-        self.factory.users.pop(self, None)
+        self.factory.remove_user(self)
 
     def onMessage(self, payload, isBinary):
         super(WSVoiceProtocol, self).onMessage(payload, isBinary)
@@ -38,3 +38,44 @@ class WSVoiceProtocol(WebSocketServerProtocol):
 
         else:
             log.msg(payload)
+            message = json.loads(payload)
+
+            if 'type' in message:
+                if message['type'] in message_router:
+                    response = message_router[message['type']](self)
+                else:
+                    bad_message_type = {
+                        'type': 'Unknown Message Type',
+                        'payload': message['type']
+                    }
+                    response = json.dumps(bad_message_type)
+            else:
+                bad_message_format = {
+                    'type': 'Bad Message Format',
+                    'payload': 'The message sent was in an unreadable format'
+                }
+                response = json.dumps(bad_message_format)
+
+            self.sendMessage(response)
+
+
+def user_list(connection):
+    """
+    :param connection: The connection
+    :return:  Return a list of users and their ids
+    """
+    response = {
+        'type': 'users',
+        'payload': {
+            'users':
+                {user.id: user.username for conn, user in connection.factory.users.iteritems()
+                 if conn is not connection}
+        }
+    }
+
+    return json.dumps(response)
+
+
+message_router = {
+    "get users": user_list
+}

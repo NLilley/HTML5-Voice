@@ -5,28 +5,6 @@
 let app = app || {};
 (_ => {
     window.addEventListener('load', _ => {
-        //console.log('Starting App!');
-        //let buttonStart = document.getElementById("start");
-        //let buttonStop = document.getElementById("stop");
-        //
-        //let inputServerAddress = document.getElementById('server-address');
-        //let inputServerPort = document.getElementById('server-port');
-        //
-        //let hostname = location.hostname || "localhost";
-        //let port = location.port || 80;
-        //
-        //inputServerAddress.value = hostname;
-        //inputServerPort.value = port;
-        //
-        //buttonStart.addEventListener('click', _ => {
-        //    console.log(inputServerAddress.value);
-        //    app.record.startRecording(inputServerAddress.value, inputServerPort.value);
-        //}, false);
-        //
-        //buttonStop.addEventListener('click', _ => {
-        //    app.record.stopRecording();
-        //}, false)
-
         app.root = document.getElementById('react-app');
         ReactDOM.render(<Connect/>, app.root);
     }, false);
@@ -41,28 +19,78 @@ let app = app || {};
         disconnectFromServer() {
             this.dispatch();
         }
+
+        updateUsers(users) {
+            this.dispatch(users);
+        }
     }
 
-    let connectActions = alt.createActions(AppActions);
+    app.actions = alt.createActions(AppActions);
+
+    function createStore(actions) {
+        let store = {
+            actions: actions,
+            listeners: [],
+            state: {}
+        };
+
+        let getState = () => {
+            return state
+        };
+
+
+        let listen = (callback)=> {
+            if (store.listeners.indexOf(callback) == -1) {
+                store.listeners.push(callback);
+            }
+        };
+
+        let unlisten = (callback) => {
+            let index = store.listeners.indexOf(callback);
+            if (index != -1) {
+                store.listeners.splice(index, 1);
+            }
+        };
+
+        let onAction = (action) => {
+            if (store.actions.hasOwnProperty(action.action)) {
+                console.log(actions);
+                store.actions[action.action](store, action);
+            }
+        };
+
+        return {
+            getState, listen, unlisten, onAction
+        }
+    }
+
+    let updateUsersId = app.actions.updateUsers.id;
+    let userStoreActions = {};
+    userStoreActions[updateUsersId] = (store, action)=> {
+        store.state = action.payload;
+        store.listeners.map(listener => listener(action.payload));
+    };
+
+    let usersStore = createStore(userStoreActions);
 
     let dispatcher = alt.dispatcher;
 
     app.listeners = {};
     app.listeners.connectToServer = (action) => {
-        console.log(action);
         let data = action.payload;
         switch (action.action) {
-            case connectActions.connectToServer.id:
+            case app.actions.connectToServer.id:
                 ReactDOM.render(<Loading/>, app.root);
 
                 app.ws.connect(data.serverAddress, data.serverPort, data.username)
                     .then(_ => {
                         ReactDOM.render(<VoiceMain/>, app.root);
                     })
-                    .catch(_ => {
+                    .catch(err => {
                         ReactDOM.render(<Connect/>, app.root);
                         // todo Move this into a proper notification!
                         console.log('Unable to connect to server');
+                        console.log(err);
                     });
 
                 app.record.startRecording()
@@ -76,8 +104,9 @@ let app = app || {};
 
                 return true;
 
-            case connectActions.disconnectFromServer.id:
+            case app.actions.disconnectFromServer.id:
                 app.ws.disconnect();
+                app.record.stopRecording();
                 ReactDOM.render(<Connect/>, app.root);
                 return true;
 
@@ -87,6 +116,7 @@ let app = app || {};
     };
 
     dispatcher.register(app.listeners.connectToServer);
+    dispatcher.register(usersStore.onAction);
 
     let VoiceMain = React.createClass({
         render(){
@@ -104,20 +134,33 @@ let app = app || {};
 
     let Users = React.createClass({
         getInitialState(){
-            return {users: [{id: 1, username: "jack"}, {id: 2, username: "jill"}]};
+            return {users: {}};
+        },
+
+        componentDidMount(){
+            usersStore.listen(this.onChange);
+        },
+
+        componentWillUnmount(){
+            usersStore.unlisten(this.onChange);
         },
 
         render(){
             return (
                 <div className="users">
                     {
-                        this.state.users.map(user => {
-                            return <User key={user.id} username={user.username}/>
+                        Object.keys(this.state.users).map(user => {
+                            return <User key={user} username={this.state.users[user]}/>
                         })
                     }
                 </div>
             )
+        },
+
+        onChange(state){
+            this.setState(state);
         }
+
     });
 
     let User = React.createClass({
@@ -139,7 +182,7 @@ let app = app || {};
             )
         },
         stopConnection(){
-            connectActions.disconnectFromServer();
+            app.actions.disconnectFromServer();
         }
     });
 
@@ -185,7 +228,7 @@ let app = app || {};
         render(){
             return (
                 <button className={this.props.className + " icon-button"} onClick={this.props.onClick}>
-                    <span>{this.props.text}</span> <i className={"float-right fa " + this.props.icon}/>
+                    <span>{this.props.text}</span> <i className={"icon-button-icon float-right fa " + this.props.icon}/>
                 </button>
             )
         }
@@ -230,7 +273,7 @@ let app = app || {};
             )
         },
         onClick () {
-            connectActions.connectToServer({
+            app.actions.connectToServer({
                 username: 'nilly',
                 serverAddress: '127.0.0.1',
                 serverPort: '80'
