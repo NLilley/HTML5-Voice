@@ -72,7 +72,7 @@ app.record = {};
 
     };
 
-    app.record.play = (data) => {
+    app.record.play = (data, meta) => {
         fileReader.readAsArrayBuffer(data);
     };
 

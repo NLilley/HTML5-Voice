@@ -1,8 +1,8 @@
 import json
-
+import sys
+import struct
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from twisted.python import log
-import sys
 
 log.startLogging(sys.stdout)
 
@@ -31,32 +31,45 @@ class WSVoiceProtocol(WebSocketServerProtocol):
 
     def onMessage(self, payload, isBinary):
         super(WSVoiceProtocol, self).onMessage(payload, isBinary)
+
         if isBinary:
-            for user in self.factory.users.keys():
-                if user == self:  # todo !=
-                    user.sendMessage(payload, isBinary=True)
+            self.handle_binary(payload)
 
         else:
-            log.msg(payload)
-            message = json.loads(payload)
+            self.handle_message(payload)
 
-            if 'type' in message:
-                if message['type'] in message_router:
-                    response = message_router[message['type']](self)
-                else:
-                    bad_message_type = {
-                        'type': 'Unknown Message Type',
-                        'payload': message['type']
-                    }
-                    response = json.dumps(bad_message_type)
+    def handle_binary(self, payload):
+        header = []
+        header.append(struct.pack("I", self.factory.users[self].id))  # The id of the sender
+        header.append('beef' * 15)  # Pad in another 60 bytes for future use if needed, bringing header to 64 bytes.
+
+        payload = ''.join(header) + payload  # prepend header
+
+        for user in self.factory.users.keys():
+            if user == self:  # todo !=
+                user.sendMessage(payload, isBinary=True)
+
+    def handle_message(self, payload):
+        log.msg(payload)
+        message = json.loads(payload)
+
+        if 'type' in message:
+            if message['type'] in message_router:
+                response = message_router[message['type']](self)
             else:
-                bad_message_format = {
-                    'type': 'Bad Message Format',
-                    'payload': 'The message sent was in an unreadable format'
+                bad_message_type = {
+                    'type': 'Unknown Message Type',
+                    'payload': message['type']
                 }
-                response = json.dumps(bad_message_format)
+                response = json.dumps(bad_message_type)
+        else:
+            bad_message_format = {
+                'type': 'Bad Message Format',
+                'payload': 'The message sent was in an unreadable format'
+            }
+            response = json.dumps(bad_message_format)
 
-            self.sendMessage(response)
+        self.sendMessage(response)
 
 
 def user_list(connection):

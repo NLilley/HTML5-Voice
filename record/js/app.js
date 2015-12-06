@@ -23,6 +23,13 @@ let app = app || {};
         updateUsers(users) {
             this.dispatch(users);
         }
+
+        setUserVolume(userId, volume) {
+            this.dispatch({
+                userId: userId,
+                volume: volume
+            });
+        }
     }
 
     app.actions = alt.createActions(AppActions);
@@ -54,7 +61,6 @@ let app = app || {};
 
         let onAction = (action) => {
             if (store.actions.hasOwnProperty(action.action)) {
-                console.log(actions);
                 store.actions[action.action](store, action);
             }
         };
@@ -64,14 +70,39 @@ let app = app || {};
         }
     }
 
-    let updateUsersId = app.actions.updateUsers.id;
     let userStoreActions = {};
-    userStoreActions[updateUsersId] = (store, action)=> {
-        store.state = action.payload;
-        store.listeners.map(listener => listener(action.payload));
+
+    userStoreActions[app.actions.updateUsers.id] = (store, action)=> {
+        if (store.state.users == null) store.state.users = {};
+
+        let updatedUsers = action.payload.users;
+
+        // Remove users that are no longer online from the store.
+        Object.keys(store.state.users).map(userId => {
+            if (!updatedUsers.hasOwnProperty(userId)) {
+                delete store.state.users[userId];
+            }
+        });
+
+        // Add any new users to the user store
+        Object.keys(updatedUsers).map(userId => {
+            if (!store.state.users.hasOwnProperty(userId)) {
+                store.state.users[userId] = {username: updatedUsers[userId], volume: 1.0}
+            }
+        });
+
+        store.listeners.map(listener => listener(store.state));
     };
 
-    let usersStore = createStore(userStoreActions);
+    userStoreActions[app.actions.setUserVolume.id] = (store, action)=> {
+        var msg = action.payload;
+        if(store.state.users.hasOwnProperty(msg.userId)){
+            store.state.users[msg.userId].volume = msg.volume;
+        }
+    };
+
+    app.stores = {};
+    app.stores.usersStore = createStore(userStoreActions);
 
     let dispatcher = alt.dispatcher;
 
@@ -116,7 +147,7 @@ let app = app || {};
     };
 
     dispatcher.register(app.listeners.connectToServer);
-    dispatcher.register(usersStore.onAction);
+    dispatcher.register(app.stores.usersStore.onAction);
 
     let VoiceMain = React.createClass({
         render(){
@@ -138,20 +169,24 @@ let app = app || {};
         },
 
         componentDidMount(){
-            usersStore.listen(this.onChange);
+            app.stores.usersStore.listen(this.onChange);
         },
 
         componentWillUnmount(){
-            usersStore.unlisten(this.onChange);
+            app.stores.usersStore.unlisten(this.onChange);
         },
 
         render(){
             return (
                 <div className="users">
                     {
-                        Object.keys(this.state.users).map(user => {
-                            return <User key={user} username={this.state.users[user]}/>
-                        })
+                        Object.keys(this.state.users).length > 0 ? Object.keys(this.state.users).map(user => {
+                            return <User key={user}
+                                         userId={user}
+                                         username={this.state.users[user].username}
+                                         volume={this.state.users[user].volume}
+                            />
+                        }) : 'There are currently no logged in users!'
                     }
                 </div>
             )
@@ -168,8 +203,37 @@ let app = app || {};
             return (
                 <div className="user">
                     {this.props.username}
+                    <MuteButton onClick={this.onMute}/>
+                    <VolumeSlider onChange={this.onVolumeChange} volume={this.props.volume}/>
                 </div>
             )
+        },
+
+        onVolumeChange(event){
+            app.actions.setUserVolume(this.props.userId, event.target.value);
+        },
+
+        onMute(event){
+
+        }
+    });
+
+    let MuteButton = React.createClass({
+        render(){
+            return <i className="mute-button fa fa-volume-up" onClick={this.props.onClick}/>
+        }
+    });
+
+    let VolumeSlider = React.createClass({
+        getDefaultProps(){
+            return {
+                volume: 1.0
+            }
+        },
+
+        render(){
+            return <input type="range" onChange={this.props.onChange} min="0" max="1" step="0.01"
+                          value={this.props.volume}/>
         }
     });
 
@@ -240,7 +304,6 @@ let app = app || {};
         }
     });
 
-    // todo Make it so the default values are automatically input!
     let TextInput = React.createClass({
         render(){
             return (
@@ -273,27 +336,19 @@ let app = app || {};
             )
         },
         onClick () {
-            app.actions.connectToServer({
-                username: 'nilly',
-                serverAddress: '127.0.0.1',
-                serverPort: '80'
-            });
+            let usernameCompontent = this.refs.username;
+            let serverAddressCompotnent = this.refs.serverAddress;
+            let serverPortComponent = this.refs.serverPort;
 
-            //let username = this.refs.username;
-            //let serverAddress = this.refs.serverAddress;
-            //let serverPort = this.refs.serverPort;
-            //
-            //if (username.state == null || serverAddress.state == null || serverPort.state == null) {
-            //    console.log('All fields must be completed to connect server!');
-            //    console.log('Also, put me in a notification!');
-            //    return;
-            //}
-            //
-            //connectActions.connectToServer({
-            //    username: username.state.value,
-            //    serverAddress: serverAddress.state.value,
-            //    serverPort: serverPort.state.value
-            //});
+            let username = usernameCompontent.state ? usernameCompontent.state.value || usernameCompontent.props.placeholder : usernameCompontent.props.placeholder;
+            let serverAddress = serverAddressCompotnent.state ? serverAddressCompotnent.state.value || serverAddressCompotnent.props.placeholder : serverAddressCompotnent.props.placeholder;
+            let serverPort = serverPortComponent.state ? serverPortComponent.state.value || serverPortComponent.props.placeholder : serverPortComponent.props.placeholder;
+
+            app.actions.connectToServer({
+                username: username,
+                serverAddress: serverAddress,
+                serverPort: serverPort
+            });
         }
     });
 })();

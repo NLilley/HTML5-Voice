@@ -34,9 +34,21 @@ let app = app || {};
             };
 
             ws.onmessage = msg => {
-                console.log(msg);
                 if (msg.data instanceof Blob) {
-                    return app.record.play(msg.data);
+
+                    let audioData = msg.data.slice(64);
+                    let messageHeader = msg.data.slice(0,64);
+
+                    let messageReader = new FileReader();
+                    messageReader.onload = event => {
+                        let msgMeta = {};
+                        msgMeta.userId = new Uint32Array(event.target.result.slice(0, 4))[0];
+                        app.record.play(audioData, msgMeta);
+
+                    };
+                    messageReader.readAsArrayBuffer(messageHeader);
+
+                    return;
 
                 }
 
