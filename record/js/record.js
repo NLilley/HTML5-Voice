@@ -2,37 +2,59 @@ let app = app || {};
 
 app.record = {};
 
-(_ => {
+(() => {
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     window.AudioCOntext = window.AudioContext || window.webkitAudioContext;
 
     let ac = new AudioContext();
 
-    let fileReader = new FileReader();
     let SAMPLE_RATE = ac.sampleRate;
     let BUFFER_SIZE = 2048 * 8;
-
-    fileReader.addEventListener('loadend', _ => {
-        let outputSource = ac.createBufferSource();
-        outputSource.connect(ac.destination);
-
-        let f32 = new Float32Array(fileReader.result);
-        let buffer = ac.createBuffer(1, BUFFER_SIZE, SAMPLE_RATE);
-        buffer.copyToChannel(f32, 0, 0); //todo fix this!
-
-
-        outputSource.buffer = buffer;
-        outputSource.start();
-
-    });
 
     let microphone;
     let recording = false;
     let chunks = [];
 
+    let users = {};
+
+
+    let playSoundForUser = (audioData, user)=> {
+        if (user.volume === 0){
+            return;
+        }
+
+        let outputSource = ac.createBufferSource();
+        let gainNode = ac.createGain();
+        gainNode.gain.value = user.volume;
+
+        outputSource.connect(gainNode);
+        gainNode.connect(ac.destination);
+
+        let fileReader = new FileReader();
+        fileReader.addEventListener('loadend', () => {
+            let f32 = new Float32Array(fileReader.result);
+            let buffer = ac.createBuffer(1, BUFFER_SIZE, SAMPLE_RATE);
+            buffer.copyToChannel(f32, 0, 0); //todo fix this!
+            outputSource.buffer = buffer;
+            outputSource.start();
+        });
+
+        fileReader.readAsArrayBuffer(audioData);
+    };
+
+    app.record.play = (audioData, meta) => {
+        if(users.hasOwnProperty(meta.userId)){
+            playSoundForUser(audioData, users[meta.userId]);
+        } else{
+            console.log('Audio data from unknown users received! Refusing to play it.');
+        }
+    };
+
+    app.stores.usersStore.listen((updatedUsers)=> {
+        Object.assign(users, updatedUsers);
+    });
 
     app.record.startRecording = () => {
-
         function prepareRecording(resolve, reject) {
             if (!navigator.getUserMedia) {
                 alert('getUserMedia() is not supported in your browser');
@@ -70,10 +92,6 @@ app.record = {};
 
         return new Promise(prepareRecording)
 
-    };
-
-    app.record.play = (data, meta) => {
-        fileReader.readAsArrayBuffer(data);
     };
 
     app.record.stopRecording = _ => {

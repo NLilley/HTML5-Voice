@@ -91,14 +91,16 @@ let app = app || {};
             }
         });
 
-        store.listeners.map(listener => listener(store.state));
+        store.listeners.map(listener => listener(store.state.users));
     };
 
     userStoreActions[app.actions.setUserVolume.id] = (store, action)=> {
         var msg = action.payload;
-        if(store.state.users.hasOwnProperty(msg.userId)){
+        if (store.state.users.hasOwnProperty(msg.userId)) {
             store.state.users[msg.userId].volume = msg.volume;
         }
+
+        store.listeners.map(listener => listener(store.state.users));
     };
 
     app.stores = {};
@@ -193,7 +195,7 @@ let app = app || {};
         },
 
         onChange(state){
-            this.setState(state);
+            this.setState({users: state});
         }
 
     });
@@ -204,16 +206,21 @@ let app = app || {};
                 <div className="user">
                     {this.props.username}
                     <MuteButton onClick={this.onMute}/>
-                    <VolumeSlider onChange={this.onVolumeChange} volume={this.props.volume}/>
+                    <VolumeSlider ref="volume" onChange={this.onVolumeChange} volume={this.props.volume}/>
                 </div>
             )
         },
 
         onVolumeChange(event){
-            app.actions.setUserVolume(this.props.userId, event.target.value);
+            app.actions.setUserVolume(this.props.userId, parseFloat(event.target.value));
         },
 
-        onMute(event){
+        onMute(){
+            //app.actions.setUserVolume(this.props.userId, 0);
+            let slider = ReactDOM.findDOMNode(this.refs.volume);
+            slider.value = 0;
+            this.onVolumeChange({target: {value: 0.0}}); //Force the react component to update
+
 
         }
     });
@@ -230,10 +237,9 @@ let app = app || {};
                 volume: 1.0
             }
         },
-
         render(){
-            return <input type="range" onChange={this.props.onChange} min="0" max="1" step="0.01"
-                          value={this.props.volume}/>
+            return <input type="range" onChange={this.props.onChange} min="0" max="2" step="0.02"
+                          defaultValue={this.props.volume}/>
         }
     });
 

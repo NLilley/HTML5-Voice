@@ -37,7 +37,7 @@ let app = app || {};
                 if (msg.data instanceof Blob) {
 
                     let audioData = msg.data.slice(64);
-                    let messageHeader = msg.data.slice(0,64);
+                    let messageHeader = msg.data.slice(0, 64);
 
                     let messageReader = new FileReader();
                     messageReader.onload = event => {
@@ -52,6 +52,7 @@ let app = app || {};
 
                 }
 
+                //Non-binary messages
                 let data = JSON.parse(msg.data);
                 let type = data.type;
                 if (events.hasOwnProperty(type)) {

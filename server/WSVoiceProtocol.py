@@ -46,7 +46,7 @@ class WSVoiceProtocol(WebSocketServerProtocol):
         payload = ''.join(header) + payload  # prepend header
 
         for user in self.factory.users.keys():
-            if user == self:  # todo !=
+            if user != self:
                 user.sendMessage(payload, isBinary=True)
 
     def handle_message(self, payload):
