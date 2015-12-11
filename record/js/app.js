@@ -34,6 +34,10 @@ let app = app || {};
         setSpeakerVolume(volume) {
             this.dispatch(volume);
         }
+
+        setMicrophoneVolume(volume) {
+            this.dispatch(volume);
+        }
     }
 
     app.actions = alt.createActions(AppActions);
@@ -54,7 +58,7 @@ let app = app || {};
         init(store.state);
 
         let getState = () => {
-            return store.state
+            return Object.assign({}, store.state);
         };
 
 
@@ -119,13 +123,20 @@ let app = app || {};
     };
 
     let clientStoreActions = {};
+
     clientStoreActions[app.actions.setSpeakerVolume.id] = (store, action) => {
-        store.state.volume = action.payload;
+        store.state.speakerVolume = action.payload;
+        store.listeners.map(listener => listener(store.state));
+    };
+
+    clientStoreActions[app.actions.setMicrophoneVolume.id] = (store, action) => {
+        store.state.microphoneVolume = action.payload;
         store.listeners.map(listener => listener(store.state));
     };
 
     let initClientStore = state => {
-        state.volume = 1;
+        state.speakerVolume = 1.0;
+        state.microphoneVolume = 1.0;
     };
 
     app.stores = {};
@@ -230,11 +241,10 @@ let app = app || {};
     let User = React.createClass({
         render(){
             return (
-                <div className="user">
-                    {this.props.username}
-                    <MuteButton onClick={this.onMute} volume={this.props.volume}/>
-                    <VolumeSlider ref="volume" onChange={this.onVolumeChange} volume={this.props.volume}/>
-                </div>
+                <VolumeWidget volume={this.props.volume}
+                              label={this.props.username}
+                              onMute={this.onMute}
+                              onVolumeChange={this.onVolumeChange}/>
             )
         },
 
@@ -243,18 +253,38 @@ let app = app || {};
         },
 
         onMute(){
-            //app.actions.setUserVolume(this.props.userId, 0);
-            let slider = ReactDOM.findDOMNode(this.refs.volume);
-            slider.value = 0;
             this.onVolumeChange({target: {value: 0.0}}); //Force the react component to update
-
-
         }
     });
 
     let VolumeWidget = React.createClass({
         render(){
+            return (
+                <div className="user">
+                    <span dangerouslySetInnerHTML={{__html: this.props.label}}/>
+                    <MuteButton onClick={this.onMute} volume={this.props.volume}/>
+                    <VolumeSlider ref="volume" onChange={this.props.onVolumeChange} volume={this.props.volume}/>
+                </div>
+            )
+        },
 
+        onMute(){
+            let slider = ReactDOM.findDOMNode(this.refs.volume);
+            slider.value = 0;
+            this.props.onMute();
+        }
+    });
+
+    let VolumeSlider = React.createClass({
+        getDefaultProps(){
+            return {
+                volume: 1.0
+            }
+        },
+        render(){
+            return <input type="range" className="volume-slider" onChange={this.props.onChange} min="0" max="1.6"
+                          step="0.02"
+                          defaultValue={this.props.volume}/>
         }
     });
 
@@ -262,7 +292,7 @@ let app = app || {};
         render(){
             let icon;
 
-            if (this.props.volume <= 0.6 && this.props.volume !== 0) {
+            if (this.props.volume <= 0.7 && this.props.volume !== 0) {
                 icon = 'fa-volume-down';
             } else if (this.props.volume === 0) {
                 icon = 'fa-volume-off';
@@ -274,24 +304,10 @@ let app = app || {};
         }
     });
 
-    let VolumeSlider = React.createClass({
-        getDefaultProps(){
-            return {
-                volume: 1.0
-            }
-        },
-        render(){
-            return <input type="range" className="volume-slider" onChange={this.props.onChange} min="0" max="2"
-                          step="0.02"
-                          defaultValue={this.props.volume}/>
-        }
-    });
 
     let Controls = React.createClass({
         getInitialState(){
-            let state = app.stores.clientStore.getState();
-            console.log(state);
-            return state;
+            return app.stores.clientStore.getState();
         },
 
         componentDidMount(){
@@ -305,8 +321,18 @@ let app = app || {};
         render(){
             return (
                 <div className="controls">
+                    <VolumeWidget volume={this.state.speakerVolume}
+                                  label='<i class="fa fa-2x fa-rss"></i>'
+                                  onMute={this.onSpeakerMute}
+                                  onVolumeChange={this.onSpeakerVolumeChange}/>
+
+                    <VolumeWidget volume={this.state.microphoneVolume}
+                                  label='<i class="fa fa-2x fa-microphone"></i>'
+                                  onMute={this.onMicrophoneMute}
+                                  onVolumeChange={this.onMicrophoneVolumeChange}/>
+
                     <StopButton className="stop-button" onClick={this.stopConnection}/>
-                    <VolumeSlider ref="speakerVolume" volume={this.state.volume} onChange={this.onSpeakerVolumeChange}/>
+
                 </div>
             )
         },
@@ -318,7 +344,17 @@ let app = app || {};
         },
         onSpeakerVolumeChange(event){
             app.actions.setSpeakerVolume(parseFloat(event.target.value));
+        },
+        onSpeakerMute(){
+            this.onSpeakerVolumeChange({target: {value: 0.0}});
+        },
+        onMicrophoneVolumeChange(event){
+            app.actions.setMicrophoneVolume(parseFloat(event.target.value));
+        },
+        onMicrophoneMute(){
+            this.onMicrophoneVolumeChange({target: {value: 0.0}});
         }
+
     });
 
     let StopButton = React.createClass({

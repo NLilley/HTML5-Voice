@@ -15,20 +15,27 @@ app.record = {};
     let recording = false;
     let chunks = [];
 
-    let users = {};
+    let users = app.stores.usersStore.getState();
+    let clientSettings = app.stores.clientStore.getState();
 
+    let speakerOutput = ac.createGain();
+    speakerOutput.gain.value = clientSettings.speakerVolume;
+    speakerOutput.connect(ac.destination);
+
+    let microphoneOutput = ac.createGain();
+    microphoneOutput.gain.value = clientSettings.microphoneVolume;
 
     let playSoundForUser = (audioData, user)=> {
-        if (user.volume === 0){
+        if (user.volume === 0) {
             return;
         }
 
         let outputSource = ac.createBufferSource();
-        let gainNode = ac.createGain();
-        gainNode.gain.value = user.volume;
+        let userVolume = ac.createGain();
+        userVolume.gain.value = user.volume;
 
-        outputSource.connect(gainNode);
-        gainNode.connect(ac.destination);
+        outputSource.connect(userVolume);
+        userVolume.connect(speakerOutput);
 
         let fileReader = new FileReader();
         fileReader.addEventListener('loadend', () => {
@@ -43,15 +50,21 @@ app.record = {};
     };
 
     app.record.play = (audioData, meta) => {
-        if(users.hasOwnProperty(meta.userId)){
+        if (users.hasOwnProperty(meta.userId)) {
             playSoundForUser(audioData, users[meta.userId]);
-        } else{
+        } else {
             console.log('Audio data from unknown users received! Refusing to play it.');
         }
     };
 
-    app.stores.usersStore.listen((updatedUsers)=> {
+    app.stores.usersStore.listen((updatedUsers) => {
         Object.assign(users, updatedUsers);
+    });
+
+    app.stores.clientStore.listen((updatedClient) => {
+        Object.assign(clientSettings, updatedClient);
+        speakerOutput.gain.value = clientSettings.speakerVolume;
+        microphoneOutput.gain.value = clientSettings.microphoneVolume;
     });
 
     app.record.startRecording = () => {
@@ -71,7 +84,8 @@ app.record = {};
                     let stream = ac.createMediaStreamSource(audioStream);
                     let processingNode = ac.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
-                    stream.connect(processingNode); //Connect our microphone right to processing.
+                    stream.connect(microphoneOutput); //Connect our microphone right to processing.
+                    microphoneOutput.connect(processingNode);
 
                     processingNode.onaudioprocess = function (data) {
                         let channel0 = data.inputBuffer.getChannelData(0);
