@@ -30,19 +30,31 @@ let app = app || {};
                 volume: volume
             });
         }
+
+        setSpeakerVolume(volume) {
+            this.dispatch(volume);
+        }
     }
 
     app.actions = alt.createActions(AppActions);
 
-    function createStore(actions) {
+    /**
+     * Create a store which can be listened to.
+     * @param actions An object mapping actions to functions which manipulate the value of the action
+     * @param init A function to set up the store
+     * @returns {{getState: getState, listen: listen, unlisten: unlisten, onAction: onAction}}
+     */
+    function createStore(actions, init) {
         let store = {
             actions: actions,
             listeners: [],
             state: {}
         };
 
+        init(store.state);
+
         let getState = () => {
-            return state
+            return store.state
         };
 
 
@@ -73,7 +85,6 @@ let app = app || {};
     let userStoreActions = {};
 
     userStoreActions[app.actions.updateUsers.id] = (store, action)=> {
-        if (store.state.users == null) store.state.users = {};
 
         let updatedUsers = action.payload.users;
 
@@ -95,7 +106,7 @@ let app = app || {};
     };
 
     userStoreActions[app.actions.setUserVolume.id] = (store, action)=> {
-        var msg = action.payload;
+        let msg = action.payload;
         if (store.state.users.hasOwnProperty(msg.userId)) {
             store.state.users[msg.userId].volume = msg.volume;
         }
@@ -103,8 +114,23 @@ let app = app || {};
         store.listeners.map(listener => listener(store.state.users));
     };
 
+    let initUserStore = state => {
+        state.users = {};
+    };
+
+    let clientStoreActions = {};
+    clientStoreActions[app.actions.setSpeakerVolume.id] = (store, action) => {
+        store.state.volume = action.payload;
+        store.listeners.map(listener => listener(store.state));
+    };
+
+    let initClientStore = state => {
+        state.volume = 1;
+    };
+
     app.stores = {};
-    app.stores.usersStore = createStore(userStoreActions);
+    app.stores.usersStore = createStore(userStoreActions, initUserStore);
+    app.stores.clientStore = createStore(clientStoreActions, initClientStore);
 
     let dispatcher = alt.dispatcher;
 
@@ -150,6 +176,7 @@ let app = app || {};
 
     dispatcher.register(app.listeners.connectToServer);
     dispatcher.register(app.stores.usersStore.onAction);
+    dispatcher.register(app.stores.clientStore.onAction);
 
     let VoiceMain = React.createClass({
         render(){
@@ -157,8 +184,8 @@ let app = app || {};
                 <div>
                     <VoiceHeader/>
                     <div className="main-content">
-                        <Users className="users"/>
                         <Controls className="controls"/>
+                        <Users className="users"/>
                     </div>
                 </div>
             )
@@ -205,7 +232,7 @@ let app = app || {};
             return (
                 <div className="user">
                     {this.props.username}
-                    <MuteButton onClick={this.onMute}/>
+                    <MuteButton onClick={this.onMute} volume={this.props.volume}/>
                     <VolumeSlider ref="volume" onChange={this.onVolumeChange} volume={this.props.volume}/>
                 </div>
             )
@@ -225,9 +252,25 @@ let app = app || {};
         }
     });
 
+    let VolumeWidget = React.createClass({
+        render(){
+
+        }
+    });
+
     let MuteButton = React.createClass({
         render(){
-            return <i className="mute-button fa fa-volume-up" onClick={this.props.onClick}/>
+            let icon;
+
+            if (this.props.volume <= 0.6 && this.props.volume !== 0) {
+                icon = 'fa-volume-down';
+            } else if (this.props.volume === 0) {
+                icon = 'fa-volume-off';
+            } else {
+                icon = 'fa-volume-up';
+            }
+
+            return <i className={"mute-button fa " + icon} onClick={this.props.onClick}/>;
         }
     });
 
@@ -238,21 +281,43 @@ let app = app || {};
             }
         },
         render(){
-            return <input type="range" onChange={this.props.onChange} min="0" max="2" step="0.02"
+            return <input type="range" className="volume-slider" onChange={this.props.onChange} min="0" max="2"
+                          step="0.02"
                           defaultValue={this.props.volume}/>
         }
     });
 
     let Controls = React.createClass({
+        getInitialState(){
+            let state = app.stores.clientStore.getState();
+            console.log(state);
+            return state;
+        },
+
+        componentDidMount(){
+            app.stores.clientStore.listen(this.onStateChange);
+        },
+
+        componentWillUnmount(){
+            app.stores.clientStore.unlisten(this.onStateChange);
+        },
+
         render(){
             return (
                 <div className="controls">
-                    <StopButton onClick={this.stopConnection}/>
+                    <StopButton className="stop-button" onClick={this.stopConnection}/>
+                    <VolumeSlider ref="speakerVolume" volume={this.state.volume} onChange={this.onSpeakerVolumeChange}/>
                 </div>
             )
         },
         stopConnection(){
             app.actions.disconnectFromServer();
+        },
+        onStateChange(state){
+            this.setState(state);
+        },
+        onSpeakerVolumeChange(event){
+            app.actions.setSpeakerVolume(parseFloat(event.target.value));
         }
     });
 
