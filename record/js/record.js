@@ -84,16 +84,18 @@ app.record = {};
                     let stream = ac.createMediaStreamSource(audioStream);
                     let processingNode = ac.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
-                    stream.connect(microphoneOutput); //Connect our microphone right to processing.
-                    microphoneOutput.connect(processingNode);
-
                     processingNode.onaudioprocess = function (data) {
+                        console.log('Getting datas!');
                         let channel0 = data.inputBuffer.getChannelData(0);
                         if (recording) {
                             chunks.push(channel0);
                         }
                         app.ws.sendAudioData(channel0);
                     };
+
+                    stream.connect(processingNode); //Connect our microphone right to processing.
+                    microphoneOutput.connect(processingNode);
+                    processingNode.connect(ac.destination); //Hack for chrome.  Chrome requires that the node be connected to final output.
 
                     resolve();
                 },
@@ -110,8 +112,10 @@ app.record = {};
 
     app.record.stopRecording = _ => {
         if (microphone) {
-            microphone.getAudioTracks().map(track => {track.stop()});
-            microphone.stop();
+            microphone.getAudioTracks().map(track => {
+                track.stop()
+            });
+            if (microphone.stop) microphone.stop();
             console.log('Attempting to stop the microphone!');
             microphone = null;
         }
