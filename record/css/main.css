@@ -5,6 +5,10 @@ body {
     padding-top: 140px;
 }
 
+div {
+    margin: 4px;
+}
+
 header {
     font-size: 80px;
     text-align: center;
@@ -15,17 +19,6 @@ main {
     padding: 20px 100px 20px 100px;
     background-color: whitesmoke;
     text-align: center;
-}
-
-.div-border {
-    margin: auto;
-    padding: 4px 0 4px 0;
-    border-top: 6px solid whitesmoke;
-    border-bottom: 1px solid whitesmoke;
-}
-
-div {
-    margin: 4px;
 }
 
 label {
@@ -42,10 +35,27 @@ input[type=text] {
     margin: auto auto 6px;
 }
 
+h1 {
+    margin: 10px;
+    font-size: 46px;
+    font-weight: bold;
+}
+
+.div-border {
+    margin: auto;
+    padding: 4px 0 4px 0;
+    border-top: 6px solid whitesmoke;
+    border-bottom: 1px solid whitesmoke;
+}
+
 .content {
     background-color: whitesmoke;
     border-radius: 4px;
     padding: 10px;
+}
+
+.loading-text {
+
 }
 
 .icon-button {
@@ -85,13 +95,13 @@ input[type=text] {
 .main-content {
     background-color: whitesmoke;
     padding: 10px;
-    display:flex;
+    display: flex;
     flex-wrap: wrap;
 }
 
 .users {
     flex-grow: 1;
-    min-width:260px;
+    min-width: 260px;
     /*border: 1px solid #999;*/
     /*border-radius: 8px;*/
     text-align: center;
@@ -99,12 +109,12 @@ input[type=text] {
 }
 
 .volume-width {
-    
+
 }
 
 .mute-button {
     margin-left: 10px;
-    cursor:pointer;
+    cursor: pointer;
 }
 
 .volume-slider {
@@ -113,9 +123,9 @@ input[type=text] {
 
 .controls {
     flex-grow: 1;
-    min-width:260px;
+    min-width: 260px;
     display: inline-block;
-    text-align:center;
+    text-align: center;
 }
 
 .stop-button {

@@ -110,7 +110,9 @@ app.record = {};
 
     app.record.stopRecording = _ => {
         if (microphone) {
+            microphone.getAudioTracks().map(track => {track.stop()});
             microphone.stop();
+            console.log('Attempting to stop the microphone!');
             microphone = null;
         }
     };

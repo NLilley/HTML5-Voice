@@ -32,7 +32,7 @@ class WSVoiceProtocol(WebSocketServerProtocol):
     def onClose(self, wasClean, code, reason):
         super(WSVoiceProtocol, self).onClose(wasClean, code, reason)
         print 'Closing down the connection!'
-        
+
         self.factory.remove_user(self)
         for user in self.factory.users.keys():
             reactor.callLater(0, user.sendMessage, user_list(user))
