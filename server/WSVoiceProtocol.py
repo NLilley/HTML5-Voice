@@ -1,8 +1,11 @@
 import json
 import sys
 import struct
+
+import time
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from twisted.python import log
+from twisted.internet import reactor
 
 log.startLogging(sys.stdout)
 
@@ -23,11 +26,16 @@ class WSVoiceProtocol(WebSocketServerProtocol):
             return
 
         self.factory.add_user(self, username)
+        for user in self.factory.users.keys():
+            reactor.callLater(0, user.sendMessage, user_list(user))
 
     def onClose(self, wasClean, code, reason):
         super(WSVoiceProtocol, self).onClose(wasClean, code, reason)
         print 'Closing down the connection!'
+        
         self.factory.remove_user(self)
+        for user in self.factory.users.keys():
+            reactor.callLater(0, user.sendMessage, user_list(user))
 
     def onMessage(self, payload, isBinary):
         super(WSVoiceProtocol, self).onMessage(payload, isBinary)

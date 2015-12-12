@@ -35,7 +35,6 @@ let app = app || {};
 
             ws.onmessage = msg => {
                 if (msg.data instanceof Blob) {
-
                     let audioData = msg.data.slice(64);
                     let messageHeader = msg.data.slice(0, 64);
 
@@ -60,8 +59,9 @@ let app = app || {};
                 }
             };
 
-            ws.onclose = _ => {
+            ws.onclose = () => {
                 console.log('Closing WS connection!');
+                app.actions.disconnectFromServer();
             };
 
             setTimeout(_ => {
@@ -100,14 +100,6 @@ let app = app || {};
             ws.send(JSON.stringify(message));
         }
     };
-
-
-    // Page server for information
-    // todo Refctor this to make it good.  The server should tell you when something interesting happens, NO PAGING!
-    setInterval(()=> {
-        app.ws.getUsers();
-    }, 2000)
-
 })();
 
 
