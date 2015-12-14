@@ -4,7 +4,7 @@ app.record = {};
 
 (() => {
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-    window.AudioCOntext = window.AudioContext || window.webkitAudioContext;
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
     let ac = new AudioContext();
 
@@ -70,7 +70,7 @@ app.record = {};
     app.record.startRecording = () => {
         function prepareRecording(resolve, reject) {
             if (!navigator.getUserMedia) {
-                alert('getUserMedia() is not supported in your browser');
+                alert('getUserMedia() is not supported in your browser.  You cannot upload any audio!');
                 return;
             }
 
@@ -82,10 +82,10 @@ app.record = {};
                     microphone = audioStream;
 
                     let stream = ac.createMediaStreamSource(audioStream);
+
                     let processingNode = ac.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
                     processingNode.onaudioprocess = function (data) {
-                        console.log('Getting datas!');
                         let channel0 = data.inputBuffer.getChannelData(0);
                         if (recording) {
                             chunks.push(channel0);
