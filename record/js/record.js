@@ -41,7 +41,7 @@ app.record = {};
         fileReader.addEventListener('loadend', () => {
             let f32 = new Float32Array(fileReader.result);
             let buffer = ac.createBuffer(1, BUFFER_SIZE, SAMPLE_RATE);
-            buffer.copyToChannel(f32, 0, 0); //todo fix this!
+            buffer.copyToChannel(f32, 0, 0);
             outputSource.buffer = buffer;
             outputSource.start();
         });
@@ -70,7 +70,8 @@ app.record = {};
     app.record.startRecording = () => {
         function prepareRecording(resolve, reject) {
             if (!navigator.getUserMedia) {
-                alert('getUserMedia() is not supported in your browser.  You cannot upload any audio!');
+                app.notify('Unable to start recording', 'getUsermedia() is not supported in your browser.' +
+                    '  You can still listen, but please try a different browser if you require recording.');
                 return;
             }
 
@@ -93,7 +94,7 @@ app.record = {};
                         app.ws.sendAudioData(channel0);
                     };
 
-                    stream.connect(processingNode); //Connect our microphone right to processing.
+                    stream.connect(microphoneOutput); //Connect our microphone right to processing.
                     microphoneOutput.connect(processingNode);
                     processingNode.connect(ac.destination); //Hack for chrome.  Chrome requires that the node be connected to final output.
 

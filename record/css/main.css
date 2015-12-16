@@ -130,3 +130,39 @@ h1 {
 
 .stop-button {
 }
+
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 30%;
+    width: 40%;
+    background-color: whitesmoke;
+    padding: 20px 0;
+    border: 1px solid #222;
+}
+
+.notification-header {
+    /*border-top: 3px solid #b22;*/
+    border-bottom: 10px solid #b22;
+    padding: 10px;
+    margin: 10px;
+    font-size: 28px;
+    text-align: center;
+}
+
+.notification-body {
+    margin: 10px;
+    padding: 10px;
+    border-bottom: 40px solid #b22;
+}
+
+.notification-close {
+    color: #444;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.notification-close:hover {
+    color: #666;
+}

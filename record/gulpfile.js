@@ -14,7 +14,11 @@ var paths = {
 };
 
 gulp.task('js', function () {
-    var b = babel({});
+    var b = babel({
+        sourceMap: false,
+        presets: ['es2015', 'react']
+    });
+
     b.on('error', function (err) {
         console.error(err);
         b.end();
@@ -22,7 +26,7 @@ gulp.task('js', function () {
 
     return gulp.src(paths.js)
         .pipe(b)
-        //.pipe(uglify())
+        .pipe(uglify())
         .pipe(gulp.dest(paths.build + '/js'));
 });
 

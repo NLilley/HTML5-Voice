@@ -2,7 +2,6 @@ import json
 import sys
 import struct
 
-import time
 from autobahn.twisted.websocket import WebSocketServerProtocol
 from twisted.python import log
 from twisted.internet import reactor

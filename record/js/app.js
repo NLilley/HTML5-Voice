@@ -1,11 +1,11 @@
 /**
  * © Nicholas Lilley 2015
  */
-
 let app = app || {};
 (_ => {
     window.addEventListener('load', _ => {
         app.root = document.getElementById('react-app');
+        app.notificationBox = document.getElementById('notification-box');
         ReactDOM.render(<Connect/>, app.root);
     }, false);
 
@@ -158,9 +158,7 @@ let app = app || {};
                     })
                     .catch(err => {
                         ReactDOM.render(<Connect/>, app.root);
-                        // todo Move this into a proper notification!
-                        console.log('Unable to connect to server');
-                        console.log(err);
+                        app.notify('Unable to connect to server', `The client is unable to connect to the server at ${data.serverAddress}:${data.serverPort}`)
                     });
 
                 app.record.startRecording()
@@ -188,6 +186,16 @@ let app = app || {};
     dispatcher.register(app.listeners.connectToServer);
     dispatcher.register(app.stores.usersStore.onAction);
     dispatcher.register(app.stores.clientStore.onAction);
+
+    app.notify = (header, message, displayTime = 5000) => {
+        let notification = ReactDOM.render(<Notification header={header} body={message}/>, app.notificationBox);
+        let domNode = ReactDOM.findDOMNode(notification);
+        setTimeout(()=> {
+            //If the notification still exists, remove it.
+            if (domNode.parentNode !== null) ReactDOM.unmountComponentAtNode(domNode.parentNode);
+        }, displayTime);
+    };
+
 
     let VoiceMain = React.createClass({
         render(){
@@ -384,7 +392,6 @@ let app = app || {};
     let Connect = React.createClass({
         render() {
             return (
-
                 <div>
                     <VoiceHeader/>
                     <ConnectionForm/>
@@ -467,4 +474,27 @@ let app = app || {};
             });
         }
     });
+
+    let Notification = React.createClass({
+        render(){
+            return (
+                <div className="notification">
+                    <div className="notification-close" onClick={this.onCloseClick}>
+                        <i className="fa fa-2x fa-close"/>
+                    </div>
+                    <div className="notification-header">
+                        {this.props.header}
+                    </div>
+                    <div className="notification-body">
+                        {this.props.body}
+                    </div>
+                </div>
+            )
+        },
+
+        onCloseClick(){
+            ReactDOM.unmountComponentAtNode(ReactDOM.findDOMNode(this).parentNode);
+        }
+    });
+
 })();

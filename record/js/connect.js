@@ -1,5 +1,9 @@
 let app = app || {};
 
+//export function cow(){
+//    console.log('cow goes moo!');
+//}
+
 (_ => {
     app.ws = {};
     let SERVER_TIMEOUT = 5000; //30 seconds
@@ -10,16 +14,6 @@ let app = app || {};
         'users': [(data)=> {
             app.actions.updateUsers(data);
         }]
-    };
-
-    app.ws.on = (event, callback) => {
-        if (!events.hasOwnProperty(event)) throw new Error(`Event of type ${event} does not exist!`);
-        events[event].push(callback);
-    };
-
-    // todo Implement me!
-    app.ws.off = (event, callback) => {
-
     };
 
     app.ws.connect = (serverAddress, serverPort, username) => {
@@ -61,13 +55,17 @@ let app = app || {};
 
             ws.onclose = () => {
                 console.log('Closing WS connection!');
+                console.log(ws);
                 app.actions.disconnectFromServer();
+            };
+
+            ws.onerror = () => {
+                reject(new Error('Unable to create websocket connection:  Error.'));
             };
 
             setTimeout(_ => {
                 if (ws.readyState !== 1) { // 0: connecting, 1: open, 2: closing, 3: closed
-                    console.log("Rejecting getConnection!");
-                    reject(new Error('Unable to create a websocket connection:  Timeout Reached'));
+                    reject(new Error('Unable to create a websocket connection:  Timeout Reached.'));
                     if (ws.readyState == 0) ws.close();
                 }
             }, SERVER_TIMEOUT);
