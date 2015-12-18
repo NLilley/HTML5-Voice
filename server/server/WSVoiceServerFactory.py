@@ -4,9 +4,10 @@ from WSUser import WSUser
 
 
 class WSVoiceServerFactory(WebSocketServerFactory):
-    users = {}
-    MAX_USERS = 32
-    id_counter = 1
+    def __init__(self):
+        self.users = {}
+        self.MAX_USERS = 32
+        self.id_counter = 1
 
     def add_user(self, connection, username):
         """

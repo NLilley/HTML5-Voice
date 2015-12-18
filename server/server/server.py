@@ -1,6 +1,7 @@
 import os
 import sys
 
+import twisted
 from twisted.python import log
 from twisted.web.server import Site
 from twisted.web.static import File
@@ -11,29 +12,29 @@ from autobahn.twisted.resource import WebSocketResource
 from WSVoiceProtocol import WSVoiceProtocol
 from WSVoiceServerFactory import WSVoiceServerFactory
 
-if __name__ == '__main__':
-    log.startLogging(sys.stdout)
 
-    arg = sys.argv[1] if len(sys.argv) > 1 else '80'
+def handle_args(args):
+    if len(args) < 2:
+        return 80
 
-    if arg == "-h" or arg  == "--help":
+    first = args[1]
+
+    if first == "-h" or first == "--help":
         print "HTML 5 Voice Server"
         print "Usage: run this script followed by a port number to start the server.\n  If no port is provided" \
               " the server will default to port 80.\n  Ensure that you have the correct user privileges" \
               " to operate on the specified port."
-        sys.exit(0)
+        raise Exception('Only help information was requested.')
 
-    try:
-        port = int(arg)
-    except Exception as ex:
-        print "Invalid command line argument."
-        print "Acceptable command line arguments: -h, --help or port number."
-        sys.exit(1)
+    return int(first)
+
+
+def start_server(port):
+    log.startLogging(sys.stdout)
 
     factory = WSVoiceServerFactory()
     factory.protocol = WSVoiceProtocol
     ws_resource = WebSocketResource(factory)
-
 
     class Home(Resource):
         def __init__(self):
@@ -55,12 +56,31 @@ if __name__ == '__main__':
             # return self.template
             return template_data
 
-
     root = Home()
     root.putChild(u'ws', ws_resource)
     site = Site(root)
 
     from twisted.internet import reactor
 
-    reactor.listenTCP(port, site)
-    reactor.run()
+    try:
+        reactor.listenTCP(port, site)
+        reactor.run()
+    except twisted.internet.error.CannotListenError:
+        print "Unable to bind to port {0}.  Are you sure this port isn't already in use?".format(port)
+        sys.exit()
+    except Exception as ex:
+        print "Exception has occurred while trying to start up the twisted server."
+        print ex
+
+
+if __name__ == '__main__':
+    try:
+        port = handle_args(sys.argv)
+    except ValueError:
+        print "Please submit valid arguments"
+        print "Valid arguments are -h, --help or <Port Number>"
+        sys.exit(1)
+    except:
+        sys.exit(0)
+
+    start_server(port)

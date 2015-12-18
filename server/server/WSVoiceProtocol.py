@@ -26,7 +26,7 @@ class WSVoiceProtocol(WebSocketServerProtocol):
 
         self.factory.add_user(self, username)
         for user in self.factory.users.keys():
-            reactor.callLater(0, user.sendMessage, user_list(user))
+            reactor.callLater(0, user.sendMessage, user_list(user, self.factory.users))
 
     def onClose(self, wasClean, code, reason):
         super(WSVoiceProtocol, self).onClose(wasClean, code, reason)
@@ -34,7 +34,7 @@ class WSVoiceProtocol(WebSocketServerProtocol):
 
         self.factory.remove_user(self)
         for user in self.factory.users.keys():
-            reactor.callLater(0, user.sendMessage, user_list(user))
+            reactor.callLater(0, user.sendMessage, user_list(user, self.factory.users))
 
     def onMessage(self, payload, isBinary):
         super(WSVoiceProtocol, self).onMessage(payload, isBinary)
@@ -79,16 +79,17 @@ class WSVoiceProtocol(WebSocketServerProtocol):
         self.sendMessage(response)
 
 
-def user_list(connection):
+def user_list(connection, users):
     """
     :param connection: The connection
+    :param users: A dictionary containing all of the user information
     :return:  Return a list of users and their ids
     """
     response = {
         'type': 'users',
         'payload': {
             'users':
-                {user.id: user.username for conn, user in connection.factory.users.iteritems()
+                {user.id: user.username for conn, user in users.iteritems()
                  if conn is not connection}
         }
     }
