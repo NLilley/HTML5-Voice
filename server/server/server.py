@@ -60,9 +60,8 @@ def start_server(port):
     root.putChild(u'ws', ws_resource)
     site = Site(root)
 
-    from twisted.internet import reactor
-
     try:
+        from twisted.internet import reactor
         reactor.listenTCP(port, site)
         reactor.run()
     except twisted.internet.error.CannotListenError:
