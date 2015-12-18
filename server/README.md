@@ -24,3 +24,9 @@ server/server.py script using:
 You should now be able to connect to the server over localhost using a HTML5 Browser.
 
 ##Make sure to build the static files for this project using the gulp script in the record module of this project.
+
+##Testing:
+
+To run tests using unittest, go to the server root directory and run the following command:
+
+>`python -m unittest discover`
