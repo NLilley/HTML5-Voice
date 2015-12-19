@@ -4,6 +4,9 @@ build/
 *-compiled.js.map
 /server/static
 
+#Ignore compiled python '.pyc' files
+*.pyc
+
 
 # Created by https://www.gitignore.io/api/webstorm,pycharm,node
 
