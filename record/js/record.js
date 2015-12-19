@@ -12,8 +12,6 @@ app.record = {};
     let BUFFER_SIZE = 2048 * 8;
 
     let microphone;
-    let recording = false;
-    let chunks = [];
 
     let users = app.stores.usersStore.getState();
     let clientSettings = app.stores.clientStore.getState();
@@ -78,7 +76,7 @@ app.record = {};
             navigator.getUserMedia({audio: true},
                 audioStream => {
                     console.log('Recording has begun:  WebSocket connection and Microphone feed acquired.');
-                    chunks = [];
+
 
                     microphone = audioStream;
 
@@ -88,9 +86,6 @@ app.record = {};
 
                     processingNode.onaudioprocess = function (data) {
                         let channel0 = data.inputBuffer.getChannelData(0);
-                        if (recording) {
-                            chunks.push(channel0);
-                        }
                         app.ws.sendAudioData(channel0);
                     };
 
@@ -122,32 +117,5 @@ app.record = {};
         }
     };
 
-    app.record.playChunks = _ => {
-        let totalLength = chunks.reduce((previous, current) => previous + current.length, 0);
-        let recording = new Float32Array(totalLength);
-
-        //let offset = 0;
-        //chunks.forEach(chunk => {
-        //    recording.set(chunk, offset);
-        //    offset += chunk.length;
-        //});
-
-        chunks.reduce((prev, curr) => {
-            recording.set(curr, prev);
-            return prev + curr.length;
-        }, 0);
-
-        let ac = new AudioContext();
-
-        let source = ac.createBufferSource();
-
-
-        let buffer = ac.createBuffer(1, recording.length, ac.sampleRate);
-        buffer.copyToChannel(recording, 0, 0);
-
-        source.buffer = buffer;
-        source.connect(ac.destination);
-        source.start();
-    };
 })();
 

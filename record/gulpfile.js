@@ -10,6 +10,7 @@ var paths = {
     fonts: './fonts/*.*',
     build: './build',
     buildFiles: './build/**/*',
+    test: './test/**/*',
     static: '../server/static'
 };
 
@@ -50,6 +51,11 @@ gulp.task('fonts', function () {
         .pipe(gulp.dest(paths.build + '/fonts'));
 });
 
+gulp.task('test', function () {
+    return gulp.src(paths.test)
+        .pipe(gulp.dest(paths.build + '/test'));
+});
+
 gulp.task('deployStatic', function () {
     return gulp.src(paths.buildFiles)
         .pipe(gulp.dest(paths.static));
@@ -61,6 +67,7 @@ gulp.task('watch', function () {
     gulp.watch(paths.js, ['js']);
     gulp.watch(paths.fonts, ['fonts']);
     gulp.watch(paths.buildFiles, ['deployStatic']);
+    gulp.watch(paths.test, ['test'])
 });
 
-gulp.task('default', ['js', 'libJs', 'html', 'css', 'fonts', 'watch']);
+gulp.task('default', ['js', 'libJs', 'html', 'css', 'fonts', 'test', 'watch']);
