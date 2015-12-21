@@ -8,4 +8,4 @@ The Server is written in python and using Twisted/AutoBahn.
 
 The Client is a JavaScript HTML5 React/Flux application.
 
-##Please see ./record/README.md and ./server/README.md for installation and usage guidance.
+##Please see [./record/README.md](record/README.md) and [./server/README.md](server/README.md) for installation and usage guidance.
